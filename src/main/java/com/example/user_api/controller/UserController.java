@@ -17,11 +17,16 @@ import java.util.List;
  * REST controller responsible for user resources.
  */
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping({"/api/users", "/api/v1/users"})
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
+
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
+    }
 
     /**
      * Creates a new user.

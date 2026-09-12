@@ -51,10 +51,13 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/api/auth/**",
                                 "/api/v1/auth/**",
+                                "/api/users/health",
+                                "/api/v1/users/health",
                                 "/h2-console/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users", "/api/v1/users").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
