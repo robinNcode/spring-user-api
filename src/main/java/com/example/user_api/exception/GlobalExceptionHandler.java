@@ -1,9 +1,15 @@
 package com.example.user_api.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -12,41 +18,39 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * Handles missing resources.
-     *
-     * @param exception resource-not-found exception
-     * @return HTTP 404 response
-     */
     @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, Object> handleNotFound(
-            ResourceNotFoundException exception
-    ) {
-
-        return Map.of(
-                "timestamp", Instant.now(),
-                "status", 404,
-                "message", exception.getMessage()
-        );
+    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException exception) {
+        return buildError(HttpStatus.NOT_FOUND, exception.getMessage(), null);
     }
 
-    /**
-     * Handles invalid business input.
-     *
-     * @param exception illegal argument exception
-     * @return HTTP 400 response
-     */
     @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, Object> handleBadRequest(
-            IllegalArgumentException exception
-    ) {
+    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException exception) {
+        return buildError(HttpStatus.BAD_REQUEST, exception.getMessage(), null);
+    }
 
-        return Map.of(
-                "timestamp", Instant.now(),
-                "status", 400,
-                "message", exception.getMessage()
-        );
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException exception) {
+        Map<String, String> details = new LinkedHashMap<>();
+        for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
+            details.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        return buildError(HttpStatus.BAD_REQUEST, "Validation failed", details);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException exception) {
+        return buildError(HttpStatus.CONFLICT, "Data integrity violation. Please check required fields and uniqueness rules.", null);
+    }
+
+    private ResponseEntity<Map<String, Object>> buildError(HttpStatus status, String message, Map<String, String> details) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", Instant.now());
+        body.put("status", status.value());
+        body.put("message", message);
+        if (details != null && !details.isEmpty()) {
+            body.put("details", details);
+        }
+        return ResponseEntity.status(status).body(body);
     }
 }

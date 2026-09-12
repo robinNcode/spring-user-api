@@ -35,15 +35,23 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserResponse create(UserCreateRequest request) {
+        String email = request.email() == null ? null : request.email().trim().toLowerCase();
 
-        if (userRepository.existsByEmail(request.email())) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
+        if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already exists");
         }
 
         User user = User.builder()
-                .name(request.name())
-                .email(request.email())
+                .roleId(request.roleId() == null ? 1L : request.roleId())
+                .name(request.name().trim())
+                .email(email)
                 .password(passwordEncoder.encode(request.password()))
+                .isActive(true)
+                .avatarUrl(null)
                 .build();
 
         return toResponse(userRepository.save(user));

@@ -22,12 +22,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-
-    @GetMapping("/health")
-    public String health() {
-        return "OK";
-    }
-
+    
     /**
      * Creates a new user.
      *
